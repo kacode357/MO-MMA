@@ -8,50 +8,31 @@ export const getApiFood = async (
   return response.data;
 };
 
-export const addToCart = async (foodId: string, quantity: number) => {
-  const response = await defaultAxiosInstance.post("/v1/api/cart", {
-    foodId,
-    quantity,
-  });
+export const getApiOrders = async () => {
+  const response = await defaultAxiosInstance.get("/v1/api/orders");
   return response.data;
 };
-export const getCart = async () => {
-  const response = await defaultAxiosInstance.get("/v1/api/cart");
+export const updateOrderItem = async (
+  updateData: { food_id: string; quantity: number }
+) => {
+  const response = await defaultAxiosInstance.put(`/v1/api/orders/items`, updateData);
   return response.data;
 };
-export const updateCart = async (foodId: string, quantity: number) => {
-  const response = await defaultAxiosInstance.put("/v1/api/cart", {
-    foodId,
-    quantity,
-  });
+export const loginUser = async (username: string, password: string) => {
+  const response = await defaultAxiosInstance.post("/v1/api/users/login", { username, password });
   return response.data;
 };
-export const deleteFromCart = async (foodId: string) => {
-  const response = await defaultAxiosInstance.delete("/v1/api/cart", {
-    data: { foodId },
-  });
+export const addOrderItems = async (
+  orderData: { items: { food_id: string; quantity: number }[]; created_by: string }
+) => {
+  const response = await defaultAxiosInstance.post("/v1/api/orders", orderData);
   return response.data;
 };
-export const clearCart = async () => {
-  const response = await defaultAxiosInstance.delete("/v1/api/cart/clear");
+export const increaseOrderItemQuantity = async (food_id: string) => {
+  const response = await defaultAxiosInstance.put(`/v1/api/orders/items/increase`, { food_id });
   return response.data;
 };
-export const getCartById = async (cartId: string) => {
-  const response = await defaultAxiosInstance.get(`/v1/api/cart/${cartId}`);
-  return response.data;
-};
-export const createPayment = async (cartId: string, amountPaid: number) => {
-  const response = await defaultAxiosInstance.post("/api/create-payment", {
-    cartId,
-    amountPaid,
-  });
-
-  return response.data;
-};
-export const createCashPayment = async (cartId: string, amountPaid: number) => {
-  const response = await defaultAxiosInstance.post("/api/cash-payment", {
-    cartId,
-    amountPaid,
-  });
+export const decreaseOrderItemQuantity = async (food_id: string) => {
+  const response = await defaultAxiosInstance.put(`/v1/api/orders/items/decrease`, { food_id });
   return response.data;
 };

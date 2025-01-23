@@ -1,5 +1,7 @@
 type RootStackParamList = {
+    
     Splash: undefined;
+    Login: undefined;
     Detail: {id : number; title: string; star: number} ;
     HomePos: undefined;
     Products: undefined;

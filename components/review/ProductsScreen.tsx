@@ -1,177 +1,231 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
-  Image,
   ActivityIndicator,
-  RefreshControl,
-  TextInput,
+  StyleSheet,
+  Image,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
-import { getApiFood, addToCart, getCart } from "../../services/api";
-import { MaterialIcons } from "@expo/vector-icons";
-import CartSummary from "./CartSummary";
+import {
+  getApiFood,
+  getApiOrders,
+  increaseOrderItemQuantity,
+  decreaseOrderItemQuantity,
+} from "../../services/api";
 
-interface Product {
-  _id: string;
+interface Food {
+  id: string;
   name: string;
-  category: string;
-  price: number;
-  original_price: number;
   description: string;
-  image_url: string;
-  location: string;
-  distance: string;
+  price: number;
+  imageUrl: string;
+  quantity: number;
 }
 
-interface CartData {
-  totalItems: number;
-  totalPrice: number;
-  items: Array<{ foodId: string; quantity: number }>;
-}
-
-interface PageInfo {
-  pageNum: number;
-  pageSize: number;
-  totalItems: number;
-  totalPages: number;
-}
-
-const ProductsScreen: React.FC = () => {
-  const [data, setData] = useState<Product[]>([]);
+const ProductsScreen = () => {
+  const [foods, setFoods] = useState<Food[]>([]);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [pageInfo, setPageInfo] = useState<PageInfo>({ pageNum: 1, pageSize: 10, totalItems: 0, totalPages: 1 });
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [cart, setCart] = useState<CartData | null>(null);
+  const [error, setError] = useState("");
 
-  // Fetch data and cart when screen is focused
-  useFocusEffect(
-    useCallback(() => {
-      fetchData(1, true);
-      fetchCart();
-    }, [searchQuery])
-  );
-
-  const fetchData = async (pageNum: number, resetData: boolean = false) => {
+  const fetchFoods = async () => {
     try {
-      if (resetData) setLoading(true);
-      const response = await getApiFood(
-        { keyword: searchQuery, is_delete: false },
-        { pageNum, pageSize: pageInfo.pageSize }
-      );
+      const searchCondition = { keyword: "", is_delete: false };
+      const pageInfo = { pageNum: 1, pageSize: 10 };
+      const result = await getApiFood(searchCondition, pageInfo);
 
-      const { pageData, pageInfo: newPageInfo } = response;
+      const mappedFoods = result.pageData.map((item: any) => ({
+        id: item._id,
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        imageUrl: item.image_url,
+        quantity: 0,
+      }));
 
-      setData((prevData) => (resetData ? pageData : [...prevData, ...pageData]));
-      setPageInfo(newPageInfo);
-    } catch (error) {
-      console.error("Failed to fetch data:", error);
+      return mappedFoods;
+    } catch (err) {
+      setError("Failed to load products");
+      return [];
+    }
+  };
+
+  const fetchOrderData = async () => {
+    try {
+      const result = await getApiOrders();
+      const orderItems = result.items;
+
+      const orderMap: { [key: string]: number } = {};
+      orderItems.forEach((item: any) => {
+        orderMap[item.food_id._id] = item.quantity;
+      });
+
+      setTotalPrice(result.total_price); // Set total price from order
+      setTotalItems(
+        orderItems.reduce((sum: number, item: any) => sum + item.quantity, 0)
+      ); // Calculate total items
+      return orderMap;
+    } catch (err) {
+      console.error("Failed to fetch order data");
+      return {};
+    }
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [foodsData, orderData] = await Promise.all([
+        fetchFoods(),
+        fetchOrderData(),
+      ]);
+
+      const updatedFoods = foodsData.map((food: Food) => ({
+        ...food,
+        quantity: orderData[food.id] || 0,
+      }));
+
+      setFoods(updatedFoods);
+    } catch (err) {
+      setError("Failed to load data");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
-  const fetchCart = async () => {
-    try {
-      const cartData = await getCart(); // Lấy lại dữ liệu giỏ hàng
-      setCart(cartData); // Lưu dữ liệu giỏ hàng vào state
-    } catch (error) {
-      console.error("Failed to fetch cart:", error);
-    }
-  };
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const handleAddToCart = async (foodId: string) => {
-    try {
-      await addToCart(foodId, 1); // Thêm sản phẩm vào giỏ hàng
-     
-      fetchCart(); // Cập nhật giỏ hàng sau khi thêm sản phẩm
-    } catch (error) {
-      console.error("Failed to add to cart:", error);
-    }
-  };
-
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    fetchData(1, true);
-    fetchCart();
+    await fetchData(); // Reload data
+    setRefreshing(false);
   };
 
-  const loadMoreData = () => {
-    if (pageInfo.pageNum < pageInfo.totalPages && !loading) {
-      fetchData(pageInfo.pageNum + 1);
+  const handleIncrease = async (foodId: string) => {
+    try {
+      const response = await increaseOrderItemQuantity(foodId);
+      setFoods((prevFoods) =>
+        prevFoods.map((food) => {
+          const orderItem = response.items.find(
+            (item: any) => item.food_id._id === food.id
+          );
+          return orderItem
+            ? { ...food, quantity: orderItem.quantity }
+            : { ...food, quantity: 0 };
+        })
+      );
+      setTotalPrice(response.total_price);
+      setTotalItems(
+        response.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
+      );
+    } catch (err) {
+      alert("Failed to increase quantity.");
     }
   };
 
-  const clearSearch = () => {
-    setSearchQuery("");
-    fetchData(1, true);
+  const handleDecrease = async (foodId: string, quantity: number) => {
+    if (quantity === 0) return; // Không gửi API nếu số lượng là 0
+
+    try {
+      const response = await decreaseOrderItemQuantity(foodId);
+
+      setFoods((prevFoods) =>
+        prevFoods.map((food) => {
+          const orderItem = response.items.find(
+            (item: any) => item.food_id._id === food.id
+          );
+          return orderItem
+            ? { ...food, quantity: orderItem.quantity }
+            : { ...food, quantity: 0 };
+        })
+      );
+      setTotalPrice(response.total_price);
+      setTotalItems(
+        response.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
+      );
+    } catch (err) {
+      alert("Failed to decrease quantity.");
+    }
   };
 
-  if (loading && data.length === 0) {
+  const handlePlaceOrder = () => {
+    alert("Order placed successfully!");
+  };
+
+  if (loading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#FF5733" />
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" />
+        <Text>Loading products...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.error}>
+        <Text>{error}</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchBar}
-          placeholder="Search products..."
-          value={searchQuery}
-          onChangeText={(text) => setSearchQuery(text)}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-            <MaterialIcons name="clear" size={20} color="#999" />
-          </TouchableOpacity>
-        )}
-      </View>
       <FlatList
-        data={data}
-        keyExtractor={(item) => item._id}
+        data={foods}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Image source={{ uri: item.image_url }} style={styles.image} />
-            <View style={styles.infoContainer}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.category}>{item.category}</Text>
-              <Text style={styles.description}>{item.description}</Text>
-              <View style={styles.priceContainer}>
-                <Text style={styles.discountedPrice}>{item.price}đ</Text>
-                <TouchableOpacity onPress={() => handleAddToCart(item._id)} style={styles.addButton}>
-                  <MaterialIcons name="add" size={24} color="#FFF" />
-                </TouchableOpacity>
-              </View>
+          <View style={styles.item}>
+            <Image source={{ uri: item.imageUrl }} style={styles.image} />
+            <View style={styles.info}>
+              <Text style={styles.title}>{item.name}</Text>
+              <Text style={styles.quantity}>x {item.quantity}</Text>
+              <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+            </View>
+            <View style={styles.buttons}>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  item.quantity === 0 && styles.disabledButton, // Thêm style khi nút bị vô hiệu hóa
+                ]}
+                onPress={() => handleDecrease(item.id, item.quantity)}
+                disabled={item.quantity === 0} // Vô hiệu hóa nút nếu quantity = 0
+              >
+                <Text style={styles.buttonText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.quantityText}>{item.quantity}</Text>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => handleIncrease(item.id)}
+              >
+                <Text style={styles.buttonText}>+</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
-        onEndReached={loadMoreData}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={
-          pageInfo.pageNum < pageInfo.totalPages ? (
-            <View style={styles.loaderContainer}>
-              <ActivityIndicator size="small" color="#FF5733" />
-            </View>
-          ) : null
-        }
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={["#FF5733"]}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       />
-      <CartSummary cart={cart} />
+      <View style={styles.summary}>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryText}>Total Items:</Text>
+          <Text style={styles.summaryValue}>{totalItems}</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryText}>Total Price:</Text>
+          <Text style={styles.summaryValue}>${totalPrice.toFixed(2)}</Text>
+        </View>
+        <TouchableOpacity style={styles.placeOrderButton} onPress={handlePlaceOrder}>
+          <Text style={styles.placeOrderButtonText}>Place Order</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -179,80 +233,112 @@ const ProductsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8F8",
-    padding: 10,
+    padding: 16,
+    backgroundColor: "#fff",
   },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    borderColor: "#DDDDDD",
-    borderWidth: 1,
-    paddingHorizontal: 10,
-  },
-  searchBar: {
-    flex: 1,
-    height: 40,
-    fontSize: 16,
-    color: "#333",
-  },
-  clearButton: {
-    padding: 5,
-  },
-  card: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    marginBottom: 10,
-    borderRadius: 8,
-    padding: 10,
-    elevation: 2,
-  },
-  image: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 10,
-  },
-  infoContainer: {
-    flex: 1,
-    justifyContent: "space-between",
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333333",
-  },
-  category: {
-    fontSize: 14,
-    color: "#4A628A",
-    marginVertical: 5,
-  },
-  description: {
-    fontSize: 12,
-    color: "#888888",
-    marginBottom: 5,
-  },
-  priceContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  discountedPrice: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#FF5733",
-  },
-  addButton: {
-    backgroundColor: "#FF5733",
-    borderRadius: 20,
-    padding: 8,
-  },
-  loaderContainer: {
+  loader: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  error: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  image: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  info: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  quantity: {
+    fontSize: 14,
+    color: "#777",
+    marginVertical: 4,
+  },
+  price: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  buttons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  button: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  disabledButton: {
+    backgroundColor: "#ccc", // Màu xám khi nút bị vô hiệu hóa
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+  quantityText: {
+    marginHorizontal: 8,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  summary: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: "#f9f9f9",
+    borderTopWidth: 1,
+    borderTopColor: "#ddd",
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  summaryText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  summaryValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  placeOrderButton: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#007AFF",
+    alignItems: "center",
+  },
+  placeOrderButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
 

@@ -12,6 +12,7 @@ import SettingsScreen from "../review/SettingsScreen";
 import CartDetailsScreen from "../review/CartDetailsScreen";
 import CashPaymentScreen from "../review/CashPaymentScreen";
 import VNPayPaymentScreen from "../review/VNPayPaymentScreen";
+import Login from "../review/Login";
 
 // Root Stack Navigator
 const AppNavigation = () => {
@@ -20,6 +21,7 @@ const AppNavigation = () => {
   return (
     <RootStack.Navigator >
       <RootStack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }}/>
+      <RootStack.Screen name="Login" component={Login} options={{ headerShown: false }}/>
       <RootStack.Screen name="HomePos" component={HomePos} options={{ headerShown: false }}/>
       <RootStack.Screen name="Products" component={ProductsScreen} />
       <RootStack.Screen name="Cart" component={CartScreen} />
