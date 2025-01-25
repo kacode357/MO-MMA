@@ -1,11 +1,10 @@
 type RootStackParamList = {
-    
     Splash: undefined;
     Login: undefined;
     Detail: {id : number; title: string; star: number} ;
     HomePos: undefined;
-    Products: undefined;
-    Cart: undefined;
+    Foods: undefined;
+    Category: undefined;
     Orders: undefined;
     PaymentOptionsScreen: undefined |  PaymentScreenProps['route']['params'];
     CashPaymentScreen: undefined |  PaymentScreenProps['route']['params'];
@@ -13,5 +12,5 @@ type RootStackParamList = {
     Reports: undefined;
     Settings: undefined;
     CartDetails: { cart: CartData };
-    
+    PosMachine: undefined;
 };

@@ -1,9 +1,6 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
-
-
-const { width, height } = Dimensions.get("window");
 
 const HomePos = () => {
   const navigation: NavigationProp<RootStackParamList> = useNavigation();
@@ -13,67 +10,80 @@ const HomePos = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>POS System</Text>
-      <Text style={styles.subtitle}>Simplify your sales and transactions</Text>
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <View style={styles.container}>
+        <Text style={styles.title}>POS System</Text>
+        <Text style={styles.subtitle}>
+          Streamline your sales and management
+        </Text>
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.button, styles.buttonProducts]}
-          onPress={() => navigateToScreen("Products")}
-        >
-          <Text style={styles.buttonText}>Products</Text>
-          <Text style={styles.buttonDescription}>View and manage items</Text>
-        </TouchableOpacity>
+        {/* Máy POS */}
+        <View style={styles.posSection}>
+          <TouchableOpacity
+            style={styles.posButton}
+            onPress={() => navigateToScreen("PosMachine")}
+          >
+            <Text style={styles.posButtonText}>Enter POS Machine</Text>
+            <Text style={styles.posButtonDescription}>
+              Start selling quickly
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={[styles.button, styles.buttonCart]}
-          onPress={() => navigateToScreen("Cart")}
-        >
-          <Text style={styles.buttonText}>Cart</Text>
-          <Text style={styles.buttonDescription}>Check out items</Text>
-        </TouchableOpacity>
+        {/* Quản lý */}
+        <View style={styles.managementSection}>
+          <Text style={styles.managementTitle}>Management</Text>
 
-        <TouchableOpacity
-          style={[styles.button, styles.buttonOrders]}
-          onPress={() => navigateToScreen("Orders")}
-        >
-          <Text style={styles.buttonText}>Orders</Text>
-          <Text style={styles.buttonDescription}>Track your orders</Text>
-        </TouchableOpacity>
+          <View style={styles.managementButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.buttonCart]}
+              onPress={() => navigateToScreen("Category")}
+            >
+              <Text style={styles.buttonText}>Category</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, styles.buttonProducts]}
+              onPress={() => navigateToScreen("Foods")}
+            >
+              <Text style={styles.buttonText}>Foods</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.buttonPayment]}
-          onPress={() => navigateToScreen("Payment")}
-        >
-          <Text style={styles.buttonText}>Payment</Text>
-          <Text style={styles.buttonDescription}>Process transactions</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.buttonOrders]}
+              onPress={() => navigateToScreen("Orders")}
+            >
+              <Text style={styles.buttonText}>Orders</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.buttonReports]}
-          onPress={() => navigateToScreen("Reports")}
-        >
-          <Text style={styles.buttonText}>Reports</Text>
-          <Text style={styles.buttonDescription}>View sales data</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.buttonReports]}
+              onPress={() => navigateToScreen("Reports")}
+            >
+              <Text style={styles.buttonText}>Reports</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.buttonSettings]}
-          onPress={() => navigateToScreen("Settings")}
-        >
-          <Text style={styles.buttonText}>Settings</Text>
-          <Text style={styles.buttonDescription}>Configure system</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.buttonSettings]}
+              onPress={() => navigateToScreen("Settings")}
+            >
+              <Text style={styles.buttonText}>Settings</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
-    paddingTop: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     backgroundColor: "#F0F4F8",
   },
   title: {
@@ -89,18 +99,55 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
-  buttonContainer: {
+  posSection: {
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  posButton: {
+    width: "100%",
+    backgroundColor: "#4CAF50",
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  posButtonText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  posButtonDescription: {
+    fontSize: 14,
+    color: "#f9f9f9",
+    marginTop: 10,
+  },
+  managementSection: {
+    marginTop: 20,
+  },
+  managementTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
+  },
+  managementButtonsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
   },
   button: {
-    width: width * 0.45,
-    height: height * 0.15,
+    width: "48%",
+    backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 10,
-    marginVertical: 10,
+    marginBottom: 15,
+    paddingVertical: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -111,12 +158,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF6F61",
   },
   buttonCart: {
-    backgroundColor: "#4CAF50",
-  },
-  buttonOrders: {
     backgroundColor: "#FFD54F",
   },
-  buttonPayment: {
+  buttonOrders: {
     backgroundColor: "#29B6F6",
   },
   buttonReports: {
@@ -126,15 +170,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF7043",
   },
   buttonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#fff",
-  },
-  buttonDescription: {
-    fontSize: 12,
-    color: "#f9f9f9",
-    marginTop: 5,
-    textAlign: "center",
   },
 });
 
