@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, Image, TouchableOpacity, RefreshControl } from "react-native";
+import { View, Text, FlatList, ActivityIndicator, Image, TouchableOpacity, RefreshControl, Alert } from "react-native";
 import { getApiFood, getApiOrders, increaseOrderItemQuantity, decreaseOrderItemQuantity } from "../../services/api";
+import { NavigationProp, useNavigation } from "@react-navigation/native";
+import styles from "../../styles/PosMachineStyles";
 
 interface Food {
   id: string;
@@ -13,19 +15,21 @@ interface Food {
 
 const PosMachine = () => {
   const [foods, setFoods] = useState<Food[]>([]);
+  const [orderId, setOrderId] = useState<string | null>(null);
   const [totalPrice, setTotalPrice] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const navigation: NavigationProp<RootStackParamList> = useNavigation();
 
+  // Fetch danh sách sản phẩm
   const fetchFoods = async () => {
     try {
       const searchCondition = { keyword: "", is_delete: false };
       const pageInfo = { pageNum: 1, pageSize: 10 };
       const result = await getApiFood(searchCondition, pageInfo);
-
-      const mappedFoods = result.pageData.map((item: any) => ({
+      return result.pageData.map((item: any) => ({
         id: item._id,
         name: item.name,
         description: item.description,
@@ -33,35 +37,47 @@ const PosMachine = () => {
         imageUrl: item.image_url,
         quantity: 0,
       }));
-
-      return mappedFoods;
-    } catch (err) {
+    } catch {
       setError("Failed to load products");
       return [];
     }
   };
 
+  // Fetch thông tin đơn hàng
   const fetchOrderData = async () => {
     try {
       const result = await getApiOrders();
-      const orderItems = result.items;
-
+  
+      if (!result || !result.items || result.items.length === 0) {
+        console.log("No order data found");
+        // Trường hợp không có dữ liệu
+        setOrderId(null);
+        setTotalPrice(0);
+        setTotalItems(0);
+        return {};
+      }
+  
+      // Trường hợp có dữ liệu
+      setOrderId(result._id);
+      setTotalPrice(result.total_price);
+      setTotalItems(result.total_items);
+  
+      // Tạo map cho các sản phẩm trong đơn hàng
       const orderMap: { [key: string]: number } = {};
-      orderItems.forEach((item: any) => {
+      result.items.forEach((item: any) => {
         orderMap[item.food_id._id] = item.quantity;
       });
-
-      setTotalPrice(result.total_price); // Set total price from order
-      setTotalItems(
-        orderItems.reduce((sum: number, item: any) => sum + item.quantity, 0)
-      ); // Calculate total items
+  
       return orderMap;
-    } catch (err) {
-    
+    } catch (error) {
+      setError("Failed to load order data");
+      console.error("Error fetching order data:", error);
       return {};
     }
   };
+  
 
+  // Kết hợp dữ liệu sản phẩm và đơn hàng
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -69,18 +85,79 @@ const PosMachine = () => {
         fetchFoods(),
         fetchOrderData(),
       ]);
-
-      const updatedFoods = foodsData.map((food: Food) => ({
-        ...food,
-        quantity: orderData[food.id] || 0,
-      }));
-
-      setFoods(updatedFoods);
-    } catch (err) {
+      setFoods(
+        foodsData.map((food: Food) => ({
+          ...food,
+          quantity: orderData[food.id] || 0,
+        }))
+      );
+    } catch {
       setError("Failed to load data");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Hàm cập nhật số lượng sản phẩm (tăng/giảm)
+  const updateOrder = (updatedResponse: any) => {
+    setFoods((prevFoods) =>
+      prevFoods.map((food) => ({
+        ...food,
+        quantity:
+          updatedResponse.items.find((item: any) => item.food_id === food.id)
+            ?.quantity || food.quantity,
+      }))
+    );
+    setTotalPrice(updatedResponse.total_price);
+    setTotalItems(
+      updatedResponse.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
+    );
+  };
+
+  const handleIncrease = async (foodId: string) => {
+    try {
+      const response = await increaseOrderItemQuantity(foodId);
+      updateOrder(response);
+      if (!orderId) setOrderId(response._id); // Cập nhật orderId nếu chưa có
+    } catch {
+      Alert.alert("Error", "Failed to increase quantity.");
+    }
+  };
+
+  const handleDecrease = async (foodId: string, quantity: number) => {
+    if (quantity === 0) return; // Không giảm nếu số lượng đã bằng 0
+    try {
+      const response = await decreaseOrderItemQuantity(foodId);
+  
+      // Cập nhật danh sách sản phẩm
+      setFoods((prevFoods) =>
+        prevFoods.map((food) => {
+          const orderItem = response.items.find(
+            (item: any) => item.food_id === food.id
+          );
+          return {
+            ...food,
+            quantity: orderItem ? orderItem.quantity : 0, // Nếu không tìm thấy trong đơn hàng, đặt số lượng = 0
+          };
+        })
+      );
+  
+      // Cập nhật tổng giá và tổng số lượng
+      setTotalPrice(response.total_price);
+      setTotalItems(
+        response.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
+      );
+    } catch {
+      Alert.alert("Error", "Failed to decrease quantity.");
+    }
+  };
+
+  const handlePlaceOrder = () => {
+    if (!orderId || totalItems === 0) {
+      Alert.alert("Error", "The cart is empty.");
+      return;
+    }
+    navigation.navigate("OrderDetails", { orderId });
   };
 
   useEffect(() => {
@@ -89,61 +166,11 @@ const PosMachine = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchData(); // Reload data
+    await fetchData();
     setRefreshing(false);
   };
 
-  const handleIncrease = async (foodId: string) => {
-    try {
-      const response = await increaseOrderItemQuantity(foodId);
-      setFoods((prevFoods) =>
-        prevFoods.map((food) => {
-          const orderItem = response.items.find(
-            (item: any) => item.food_id._id === food.id
-          );
-          return orderItem
-            ? { ...food, quantity: orderItem.quantity }
-            : { ...food, quantity: 0 };
-        })
-      );
-      setTotalPrice(response.total_price);
-      setTotalItems(
-        response.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
-      );
-    } catch (err) {
-      alert("Failed to increase quantity.");
-    }
-  };
-
-  const handleDecrease = async (foodId: string, quantity: number) => {
-    if (quantity === 0) return; // Không gửi API nếu số lượng là 0
-
-    try {
-      const response = await decreaseOrderItemQuantity(foodId);
-
-      setFoods((prevFoods) =>
-        prevFoods.map((food) => {
-          const orderItem = response.items.find(
-            (item: any) => item.food_id._id === food.id
-          );
-          return orderItem
-            ? { ...food, quantity: orderItem.quantity }
-            : { ...food, quantity: 0 };
-        })
-      );
-      setTotalPrice(response.total_price);
-      setTotalItems(
-        response.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
-      );
-    } catch (err) {
-      alert("Failed to decrease quantity.");
-    }
-  };
-
-  const handlePlaceOrder = () => {
-    alert("Order placed successfully!");
-  };
-
+  // Hiển thị loader khi đang tải
   if (loading) {
     return (
       <View style={styles.loader}>
@@ -153,6 +180,7 @@ const PosMachine = () => {
     );
   }
 
+  // Hiển thị lỗi nếu có
   if (error) {
     return (
       <View style={styles.error}>
@@ -161,6 +189,7 @@ const PosMachine = () => {
     );
   }
 
+  // Giao diện chính
   return (
     <View style={styles.container}>
       <FlatList
@@ -178,14 +207,13 @@ const PosMachine = () => {
               <TouchableOpacity
                 style={[
                   styles.button,
-                  item.quantity === 0 && styles.disabledButton, // Thêm style khi nút bị vô hiệu hóa
+                  item.quantity === 0 && styles.disabledButton,
                 ]}
                 onPress={() => handleDecrease(item.id, item.quantity)}
-                disabled={item.quantity === 0} // Vô hiệu hóa nút nếu quantity = 0
+                disabled={item.quantity === 0}
               >
                 <Text style={styles.buttonText}>-</Text>
               </TouchableOpacity>
-              <Text style={styles.quantityText}>{item.quantity}</Text>
               <TouchableOpacity
                 style={styles.button}
                 onPress={() => handleIncrease(item.id)}
@@ -215,117 +243,5 @@ const PosMachine = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
-  },
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  error: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    marginBottom: 8,
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  image: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  info: {
-    flex: 1,
-    marginLeft: 16,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  quantity: {
-    fontSize: 14,
-    color: "#777",
-    marginVertical: 4,
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  buttons: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  button: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  disabledButton: {
-    backgroundColor: "#ccc", // Màu xám khi nút bị vô hiệu hóa
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 18,
-  },
-  quantityText: {
-    marginHorizontal: 8,
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  summary: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: "#f9f9f9",
-    borderTopWidth: 1,
-    borderTopColor: "#ddd",
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  summaryText: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  placeOrderButton: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#007AFF",
-    alignItems: "center",
-  },
-  placeOrderButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-});
 
 export default PosMachine;

@@ -5,7 +5,7 @@ const SplashScreen: React.FC = () => {
   const navigation: NavigationProp<RootStackParamList> = useNavigation();
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigation.navigate("Login");
+      navigation.navigate("HomePos");
     }, 3000);
 
     return () => clearTimeout(timer);

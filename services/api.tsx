@@ -92,3 +92,17 @@ export const updateFood = async (
   const response = await defaultAxiosInstance.put(`/v1/api/foods/${foodId}`, foodData);
   return response.data;
 };
+
+export const processPayment = async (
+  paymentData: { order_id: string; amount: number; method: string }
+) => {
+  const response = await defaultAxiosInstance.post("/v1/api/payment", paymentData);
+  return response.data;
+};
+export const updatePaymentStatus = async (
+  paymentId: string,
+  paymentData: { status: string; method: string }
+) => {
+  const response = await defaultAxiosInstance.put(`/v1/api/payment/${paymentId}`, paymentData);
+  return response.data;
+};

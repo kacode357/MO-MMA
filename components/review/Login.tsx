@@ -7,9 +7,11 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { loginUser } from "../../services/api"; // Import API đã viết sẵn
+import { loginUser } from "../../services/api";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 
 const Login = () => {
@@ -29,10 +31,8 @@ const Login = () => {
       const response = await loginUser(username, password);
       console.log("response", response);
       if (response) {
-        // Lưu user_id vào AsyncStorage
         await AsyncStorage.setItem("user_id", response.user_id);
         Alert.alert("Thành công", response.message);
-        // Chuyển hướng sang trang HomePos
         navigation.navigate("HomePos");
       } else {
         Alert.alert("Lỗi", response.message || "Đăng nhập thất bại");
@@ -45,38 +45,40 @@ const Login = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome Back!</Text>
-      <Text style={styles.subtitle}>Login to continue</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Welcome Back!</Text>
+        <Text style={styles.subtitle}>Login to continue</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Username"
-        value={username}
-        onChangeText={setUsername}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
 
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleLogin}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Login</Text>
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Login</Text>
+          )}
+        </TouchableOpacity>
 
-      <Text style={styles.footerText}>Don't have an account? Sign Up</Text>
-    </View>
+       
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 

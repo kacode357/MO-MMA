@@ -16,6 +16,9 @@ import Login from "../review/Login";
 import PosMachine from "../review/PosMachine";
 import CategoryScreen from "../review/Category/CategoryScreen";
 import FoodsScreen from "../review/Foods/FoodsScreen";
+import OrderDetails from "../review/Order/OrderDetaild";
+import CashScreen from "../review/Order/CashScreen";
+import QRCodeScreen from "../review/Order/QRCodeScreen";
 
 // Root Stack Navigator
 const AppNavigation = () => {
@@ -38,6 +41,10 @@ const AppNavigation = () => {
       <RootStack.Screen name="PosMachine" component={PosMachine} />
       <RootStack.Screen name="Category" component={CategoryScreen} />
       <RootStack.Screen name="Foods" component={FoodsScreen} />
+      <RootStack.Screen name="OrderDetails" component={OrderDetails} />
+      <RootStack.Screen name="CashScreen" component={CashScreen} />
+      <RootStack.Screen name="QRCodeScreen" component={QRCodeScreen} />
+
 
     </RootStack.Navigator>
   );
