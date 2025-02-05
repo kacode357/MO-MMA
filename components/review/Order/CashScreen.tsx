@@ -9,22 +9,29 @@ import {
   Alert,
 } from "react-native";
 import { updatePaymentStatus } from "../../../services/api";
+import { NavigationProp, useNavigation } from "@react-navigation/native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 
 const CashScreen = ({ route }: any) => {
   const { order_id, amount, method, items, paymentId } = route.params;
-  const [customerAmount, setCustomerAmount] = useState<string>(""); // Số tiền khách đưa
-  const [changeAmount, setChangeAmount] = useState<number>(0); // Số tiền trả lại
+  const [customerAmount, setCustomerAmount] = useState<string>("");
+  const [changeAmount, setChangeAmount] = useState<number>(0);
+  const navigation: NavigationProp<RootStackParamList> = useNavigation();
+
+  // Hàm định dạng tiền tệ VND
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
+  };
 
   const handleAmountChange = (value: string) => {
     setCustomerAmount(value);
 
     const customerPaid = parseFloat(value);
     if (!isNaN(customerPaid) && customerPaid >= amount) {
-      setChangeAmount(customerPaid - amount); // Tính tiền thừa
+      setChangeAmount(customerPaid - amount);
     } else {
-      setChangeAmount(0); // Đặt tiền thừa là 0 nếu số tiền không đủ hoặc không hợp lệ
+      setChangeAmount(0);
     }
   };
 
@@ -36,22 +43,7 @@ const CashScreen = ({ route }: any) => {
       return;
     }
 
-    try {
-      const paymentData = {
-        status: "paid",
-        method,
-      };
-
-      console.log("Updating payment status:", paymentData);
-      const response = await updatePaymentStatus(paymentId, paymentData);
-      console.log("Payment updated:", response);
-
-      Alert.alert(
-        "Success",
-        `Payment completed successfully! Change: $${changeAmount.toFixed(2)}`
-      );
-
-      // Tạo và xuất file PDF
+    const generateAndSharePDF = async (customerPaid: number) => {
       const htmlContent = `
         <html>
           <head>
@@ -69,9 +61,9 @@ const CashScreen = ({ route }: any) => {
             <p>Order ID: ${order_id}</p>
             <p>Payment ID: ${paymentId}</p>
             <p>Payment Method: ${method}</p>
-            <p>Amount: $${amount.toFixed(2)}</p>
-            <p>Customer Paid: $${customerPaid.toFixed(2)}</p>
-            <p>Change: $${changeAmount.toFixed(2)}</p>
+            <p>Amount: ${formatCurrency(amount)}</p>
+            <p>Customer Paid: ${formatCurrency(customerPaid)}</p>
+            <p>Change: ${formatCurrency(changeAmount)}</p>
             <table>
               <tr>
                 <th>Item</th>
@@ -81,12 +73,12 @@ const CashScreen = ({ route }: any) => {
               ${items
                 .map(
                   (item: { food_id: { name: string }; quantity: number; price: number }) => `
-                <tr>
-                  <td>${item.food_id.name}</td>
-                  <td>${item.quantity}</td>
-                  <td>$${(item.price * item.quantity).toFixed(2)}</td>
-                </tr>
-              `
+                  <tr>
+                    <td>${item.food_id.name}</td>
+                    <td>${item.quantity}</td>
+                    <td>${formatCurrency(item.price * item.quantity)}</td>
+                  </tr>
+                `
                 )
                 .join("")}
             </table>
@@ -105,6 +97,36 @@ const CashScreen = ({ route }: any) => {
       } else {
         Alert.alert("PDF saved", `PDF file has been saved to: ${uri}`);
       }
+
+      // Chuyển hướng đến trang thông báo hoàn tất
+      navigation.navigate("PaymentSuccessScreen");
+    };
+
+    try {
+      const paymentData = {
+        status: "paid",
+        method,
+      };
+
+      console.log("Updating payment status:", paymentData);
+      const response = await updatePaymentStatus(paymentId, paymentData);
+      console.log("Payment updated:", response);
+
+      Alert.alert(
+        "Success",
+        `Payment completed successfully! Change: ${formatCurrency(changeAmount)}`,
+        [
+          {
+            text: "Print Receipt",
+            onPress: () => generateAndSharePDF(customerPaid),
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => navigation.navigate("PaymentSuccessScreen"),
+          },
+        ]
+      );
     } catch (error) {
       console.error("Error updating payment status:", error);
       Alert.alert("Error", "An error occurred while completing the payment.");
@@ -116,7 +138,7 @@ const CashScreen = ({ route }: any) => {
       <Text style={styles.title}>Payment Method: {method}</Text>
       <Text>Order ID: {order_id}</Text>
       <Text>Payment ID: {paymentId}</Text>
-      <Text>Amount: ${amount.toFixed(2)}</Text>
+      <Text>Amount: {formatCurrency(amount)}</Text>
       <Text>Thank you for choosing Cash Payment!</Text>
       <Text style={styles.subtitle}>Order Items:</Text>
       <FlatList
@@ -126,9 +148,7 @@ const CashScreen = ({ route }: any) => {
           <View style={styles.itemRow}>
             <Text style={styles.itemName}>{item.food_id.name}</Text>
             <Text style={styles.itemQuantity}>x{item.quantity}</Text>
-            <Text style={styles.itemPrice}>
-              ${(item.price * item.quantity).toFixed(2)}
-            </Text>
+            <Text style={styles.itemPrice}>{formatCurrency(item.price * item.quantity)}</Text>
           </View>
         )}
       />
@@ -142,9 +162,7 @@ const CashScreen = ({ route }: any) => {
           value={customerAmount}
           onChangeText={handleAmountChange}
         />
-        <Text style={styles.changeText}>
-          Change: ${changeAmount.toFixed(2)}
-        </Text>
+        <Text style={styles.changeText}>Change: {formatCurrency(changeAmount)}</Text>
       </View>
 
       <TouchableOpacity style={styles.button} onPress={handleCompletePayment}>

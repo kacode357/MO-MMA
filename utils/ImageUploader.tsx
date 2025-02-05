@@ -81,12 +81,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload }) => {
           {uploading ? "Uploading..." : "Pick and Upload Image"}
         </Button>
       )}
-      {uploading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator animating={true} size="small" color="#6200ee" />
-        
-        </View>
-      )}
+    
     </View>
   );
 };

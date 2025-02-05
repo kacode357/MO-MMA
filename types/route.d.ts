@@ -16,4 +16,5 @@ type RootStackParamList = {
     OrderDetails: { orderId: string };
     CashScreen: undefined;
     QRCodeScreen: undefined;
+    PaymentSuccessScreen: undefined;
 };

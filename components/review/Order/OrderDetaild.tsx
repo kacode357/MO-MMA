@@ -3,19 +3,25 @@ import { View, Text, ActivityIndicator, StyleSheet, FlatList, TouchableOpacity }
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker";
 import { useRoute, RouteProp } from "@react-navigation/native";
-import { getApiOrders, processPayment  } from "../../../services/api";
+import { getApiOrders, processPayment } from "../../../services/api";
 
 const OrderDetails = () => {
-  const route = useRoute<RouteProp<RootStackParamList, "OrderDetails">>();
-   const navigation : NavigationProp<RootStackParamList> = useNavigation();
-  const { orderId } = route.params;
+
+  const navigation: NavigationProp<RootStackParamList> = useNavigation();
+
 
   const [orderDetails, setOrderDetails] = useState<any>(null);
-  const [pamentId , setPaymentId] = useState<any>(null);
+  const [paymentId, setPaymentId] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<string>("cash"); 
+  const [paymentMethod, setPaymentMethod] = useState<string>("cash");
 
+  // Hàm định dạng tiền tệ VND
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
+  };
+
+  // Lấy chi tiết đơn hàng
   const fetchOrderDetails = async () => {
     setLoading(true);
     try {
@@ -39,21 +45,21 @@ const OrderDetails = () => {
       method: paymentMethod.toLowerCase(),
       items: orderDetails.items,
     };
-  
+
     try {
-      // Loại bỏ items khi gửi đến API
+      // Loại bỏ `items` khi gửi API
       const { items, ...paymentDataWithoutItems } = paymentData;
       console.log("Payment data:", paymentDataWithoutItems);
-  
-      // Gửi yêu cầu tạo thanh toán
+
+      // Gửi yêu cầu thanh toán
       const response = await processPayment(paymentDataWithoutItems);
-      setPaymentId(response._id); // Lưu Payment ID vào state
-      console.log("Payment response:", response.payment._id
-      );
-  
-      // Kiểm tra kết quả trả về từ API và điều hướng
+      console.log("Payment response:", response);
+      setPaymentId(response._id);
+
       if (response) {
-        const navigationData = { ...paymentData, paymentId: response.payment._id }; // Thêm paymentId
+        const navigationData = { ...paymentData, paymentId: response.payment._id };
+        console.log("Navigation data:", navigationData);
+
         if (paymentMethod === "cash") {
           navigation.navigate("CashScreen", navigationData);
         } else if (paymentMethod === "qr_code") {
@@ -67,9 +73,6 @@ const OrderDetails = () => {
       alert("An error occurred while processing the payment. Please try again.");
     }
   };
-  
-  
-  
 
   useEffect(() => {
     fetchOrderDetails();
@@ -94,20 +97,15 @@ const OrderDetails = () => {
 
   return (
     <View style={styles.container}>
-      {/* Tiêu đề */}
       <Text style={styles.title}>Order Details</Text>
 
-      {/* Thông tin đơn hàng */}
       <View style={styles.orderInfo}>
         <Text style={styles.detail}>Order ID: {orderDetails._id}</Text>
         <Text style={styles.detail}>Total Items: {orderDetails.total_items}</Text>
-        <Text style={styles.detail}>
-          Total Price: ${orderDetails.total_price.toFixed(2)}
-        </Text>
+        <Text style={styles.detail}>Total Price: {formatCurrency(orderDetails.total_price)}</Text>
         <Text style={styles.detail}>Status: {orderDetails.status}</Text>
       </View>
 
-      {/* Danh sách món ăn */}
       <FlatList
         data={orderDetails.items}
         keyExtractor={(item) => item._id}
@@ -115,28 +113,20 @@ const OrderDetails = () => {
           <View style={styles.itemRow}>
             <Text style={styles.itemName}>{item.food_id.name}</Text>
             <Text style={styles.itemQuantity}>x{item.quantity}</Text>
-            <Text style={styles.itemPrice}>
-              ${(item.price * item.quantity).toFixed(2)}
-            </Text>
+            <Text style={styles.itemPrice}>{formatCurrency(item.price * item.quantity)}</Text>
           </View>
         )}
         style={styles.itemList}
       />
 
-      {/* Chọn phương thức thanh toán */}
       <View style={styles.paymentMethodContainer}>
         <Text style={styles.paymentLabel}>Choose Payment Method:</Text>
-        <Picker
-          selectedValue={paymentMethod}
-          style={styles.picker}
-          onValueChange={(itemValue) => setPaymentMethod(itemValue)}
-        >
+        <Picker selectedValue={paymentMethod} style={styles.picker} onValueChange={(itemValue) => setPaymentMethod(itemValue)}>
           <Picker.Item label="Cash" value="cash" />
           <Picker.Item label="QR Code" value="qr_code" />
         </Picker>
       </View>
 
-      {/* Nút Xác nhận thanh toán */}
       <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmPayment}>
         <Text style={styles.confirmButtonText}>Confirm Payment</Text>
       </TouchableOpacity>

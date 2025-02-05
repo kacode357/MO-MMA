@@ -23,12 +23,18 @@ const PosMachine = () => {
   const [error, setError] = useState("");
   const navigation: NavigationProp<RootStackParamList> = useNavigation();
 
+  // Định dạng giá tiền sang VND
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
+  };
+
   // Fetch danh sách sản phẩm
   const fetchFoods = async () => {
     try {
       const searchCondition = { keyword: "", is_delete: false };
       const pageInfo = { pageNum: 1, pageSize: 10 };
       const result = await getApiFood(searchCondition, pageInfo);
+   
       return result.pageData.map((item: any) => ({
         id: item._id,
         name: item.name,
@@ -50,19 +56,16 @@ const PosMachine = () => {
   
       if (!result || !result.items || result.items.length === 0) {
         console.log("No order data found");
-        // Trường hợp không có dữ liệu
         setOrderId(null);
         setTotalPrice(0);
         setTotalItems(0);
         return {};
       }
   
-      // Trường hợp có dữ liệu
       setOrderId(result._id);
       setTotalPrice(result.total_price);
       setTotalItems(result.total_items);
   
-      // Tạo map cho các sản phẩm trong đơn hàng
       const orderMap: { [key: string]: number } = {};
       result.items.forEach((item: any) => {
         orderMap[item.food_id._id] = item.quantity;
@@ -75,16 +78,12 @@ const PosMachine = () => {
       return {};
     }
   };
-  
 
   // Kết hợp dữ liệu sản phẩm và đơn hàng
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [foodsData, orderData] = await Promise.all([
-        fetchFoods(),
-        fetchOrderData(),
-      ]);
+      const [foodsData, orderData] = await Promise.all([fetchFoods(), fetchOrderData()]);
       setFoods(
         foodsData.map((food: Food) => ({
           ...food,
@@ -98,14 +97,13 @@ const PosMachine = () => {
     }
   };
 
-  // Hàm cập nhật số lượng sản phẩm (tăng/giảm)
+  // Hàm cập nhật số lượng sản phẩm
   const updateOrder = (updatedResponse: any) => {
     setFoods((prevFoods) =>
       prevFoods.map((food) => ({
         ...food,
         quantity:
-          updatedResponse.items.find((item: any) => item.food_id === food.id)
-            ?.quantity || food.quantity,
+          updatedResponse.items.find((item: any) => item.food_id === food.id)?.quantity || food.quantity,
       }))
     );
     setTotalPrice(updatedResponse.total_price);
@@ -118,35 +116,27 @@ const PosMachine = () => {
     try {
       const response = await increaseOrderItemQuantity(foodId);
       updateOrder(response);
-      if (!orderId) setOrderId(response._id); // Cập nhật orderId nếu chưa có
+      if (!orderId) setOrderId(response._id);
     } catch {
       Alert.alert("Error", "Failed to increase quantity.");
     }
   };
 
   const handleDecrease = async (foodId: string, quantity: number) => {
-    if (quantity === 0) return; // Không giảm nếu số lượng đã bằng 0
+    if (quantity === 0) return;
     try {
       const response = await decreaseOrderItemQuantity(foodId);
-  
-      // Cập nhật danh sách sản phẩm
       setFoods((prevFoods) =>
         prevFoods.map((food) => {
-          const orderItem = response.items.find(
-            (item: any) => item.food_id === food.id
-          );
+          const orderItem = response.items.find((item: any) => item.food_id === food.id);
           return {
             ...food,
-            quantity: orderItem ? orderItem.quantity : 0, // Nếu không tìm thấy trong đơn hàng, đặt số lượng = 0
+            quantity: orderItem ? orderItem.quantity : 0,
           };
         })
       );
-  
-      // Cập nhật tổng giá và tổng số lượng
       setTotalPrice(response.total_price);
-      setTotalItems(
-        response.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
-      );
+      setTotalItems(response.items.reduce((sum: number, item: any) => sum + item.quantity, 0));
     } catch {
       Alert.alert("Error", "Failed to decrease quantity.");
     }
@@ -201,31 +191,23 @@ const PosMachine = () => {
             <View style={styles.info}>
               <Text style={styles.title}>{item.name}</Text>
               <Text style={styles.quantity}>x {item.quantity}</Text>
-              <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+              <Text style={styles.price}>{formatCurrency(item.price)}</Text>
             </View>
             <View style={styles.buttons}>
               <TouchableOpacity
-                style={[
-                  styles.button,
-                  item.quantity === 0 && styles.disabledButton,
-                ]}
+                style={[styles.button, item.quantity === 0 && styles.disabledButton]}
                 onPress={() => handleDecrease(item.id, item.quantity)}
                 disabled={item.quantity === 0}
               >
                 <Text style={styles.buttonText}>-</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => handleIncrease(item.id)}
-              >
+              <TouchableOpacity style={styles.button} onPress={() => handleIncrease(item.id)}>
                 <Text style={styles.buttonText}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       />
       <View style={styles.summary}>
         <View style={styles.summaryRow}>
@@ -234,7 +216,7 @@ const PosMachine = () => {
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryText}>Total Price:</Text>
-          <Text style={styles.summaryValue}>${totalPrice.toFixed(2)}</Text>
+          <Text style={styles.summaryValue}>{formatCurrency(totalPrice)}</Text>
         </View>
         <TouchableOpacity style={styles.placeOrderButton} onPress={handlePlaceOrder}>
           <Text style={styles.placeOrderButtonText}>Place Order</Text>

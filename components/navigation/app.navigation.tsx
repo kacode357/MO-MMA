@@ -19,6 +19,7 @@ import FoodsScreen from "../review/Foods/FoodsScreen";
 import OrderDetails from "../review/Order/OrderDetaild";
 import CashScreen from "../review/Order/CashScreen";
 import QRCodeScreen from "../review/Order/QRCodeScreen";
+import PaymentSuccessScreen from "../review/Order/PaymentSuccessScreen";
 
 // Root Stack Navigator
 const AppNavigation = () => {
@@ -44,6 +45,8 @@ const AppNavigation = () => {
       <RootStack.Screen name="OrderDetails" component={OrderDetails} />
       <RootStack.Screen name="CashScreen" component={CashScreen} />
       <RootStack.Screen name="QRCodeScreen" component={QRCodeScreen} />
+      <RootStack.Screen name="PaymentSuccessScreen" component={PaymentSuccessScreen}  options={{ headerShown: false }}/>
+
 
 
     </RootStack.Navigator>
