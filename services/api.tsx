@@ -106,3 +106,15 @@ export const updatePaymentStatus = async (
   const response = await defaultAxiosInstance.put(`/v1/api/payment/${paymentId}`, paymentData);
   return response.data;
 };
+export const getDashboardPayment = async () => {
+  const response = await defaultAxiosInstance.get("/v1/api/dashboard/payment");
+  return response.data;
+};
+export const getDashboardOrders = async (
+  searchCondition: { status: string; keyword: string },
+  pageInfo: { pageNum: number; pageSize: number }
+) => {
+  const response = await defaultAxiosInstance.post("/v1/api/dashboard/orders/search", { searchCondition, pageInfo });
+  console.log("Danh sách đơn hàng:>>>> ", response);
+  return response.data;
+};

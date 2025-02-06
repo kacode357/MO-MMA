@@ -58,9 +58,9 @@ const HomePos = () => {
 
             <TouchableOpacity
               style={[styles.button, styles.buttonReports]}
-              onPress={() => navigateToScreen("Reports")}
+              onPress={() => navigateToScreen("Dashboard")}
             >
-              <Text style={styles.buttonText}>Reports</Text>
+              <Text style={styles.buttonText}>Dashboard</Text>
             </TouchableOpacity>
 
             <TouchableOpacity

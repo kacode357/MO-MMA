@@ -10,19 +10,13 @@ import {
 } from "react-native";
 import { updatePaymentStatus } from "../../../services/api";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
-import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
+import { generateAndSharePDF, formatCurrency } from "./ReceiptGenerator";
 
 const CashScreen = ({ route }: any) => {
   const { order_id, amount, method, items, paymentId } = route.params;
   const [customerAmount, setCustomerAmount] = useState<string>("");
   const [changeAmount, setChangeAmount] = useState<number>(0);
   const navigation: NavigationProp<RootStackParamList> = useNavigation();
-
-  // Hàm định dạng tiền tệ VND
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
-  };
 
   const handleAmountChange = (value: string) => {
     setCustomerAmount(value);
@@ -43,74 +37,12 @@ const CashScreen = ({ route }: any) => {
       return;
     }
 
-    const generateAndSharePDF = async (customerPaid: number) => {
-      const htmlContent = `
-        <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 20px; }
-              h1 { color: #007bff; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #f2f2f2; }
-              .summary { margin-top: 20px; }
-            </style>
-          </head>
-          <body>
-            <h1>Payment Receipt</h1>
-            <p>Order ID: ${order_id}</p>
-            <p>Payment ID: ${paymentId}</p>
-            <p>Payment Method: ${method}</p>
-            <p>Amount: ${formatCurrency(amount)}</p>
-            <p>Customer Paid: ${formatCurrency(customerPaid)}</p>
-            <p>Change: ${formatCurrency(changeAmount)}</p>
-            <table>
-              <tr>
-                <th>Item</th>
-                <th>Quantity</th>
-                <th>Price</th>
-              </tr>
-              ${items
-                .map(
-                  (item: { food_id: { name: string }; quantity: number; price: number }) => `
-                  <tr>
-                    <td>${item.food_id.name}</td>
-                    <td>${item.quantity}</td>
-                    <td>${formatCurrency(item.price * item.quantity)}</td>
-                  </tr>
-                `
-                )
-                .join("")}
-            </table>
-            <div class="summary">
-              <p>Thank you for your purchase!</p>
-            </div>
-          </body>
-        </html>
-      `;
-
-      const { uri } = await Print.printToFileAsync({ html: htmlContent });
-      console.log("PDF saved to:", uri);
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri);
-      } else {
-        Alert.alert("PDF saved", `PDF file has been saved to: ${uri}`);
-      }
-
-      // Chuyển hướng đến trang thông báo hoàn tất
-      navigation.navigate("PaymentSuccessScreen");
-    };
-
     try {
-      const paymentData = {
-        status: "paid",
-        method,
-      };
+      const paymentData = { status: "paid", method };
 
       console.log("Updating payment status:", paymentData);
-      const response = await updatePaymentStatus(paymentId, paymentData);
-      console.log("Payment updated:", response);
+      await updatePaymentStatus(paymentId, paymentData);
+      console.log("Payment updated successfully!");
 
       Alert.alert(
         "Success",
@@ -118,7 +50,8 @@ const CashScreen = ({ route }: any) => {
         [
           {
             text: "Print Receipt",
-            onPress: () => generateAndSharePDF(customerPaid),
+            onPress: () =>
+              generateAndSharePDF(order_id, paymentId, method, amount, customerPaid, changeAmount, items),
           },
           {
             text: "Cancel",
@@ -196,11 +129,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
   },
-  changeText: {
-    fontSize: 16,
-    marginTop: 10,
-    fontWeight: "bold",
-  },
+  changeText: { fontSize: 16, marginTop: 10, fontWeight: "bold" },
   button: {
     backgroundColor: "#007bff",
     padding: 15,

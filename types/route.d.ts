@@ -9,7 +9,7 @@ type RootStackParamList = {
     PaymentOptionsScreen: undefined | PaymentScreenProps['route']['params'];
     CashPaymentScreen: undefined | PaymentScreenProps['route']['params'];
     VNPayPaymentScreen: undefined | PaymentScreenProps['route']['params'];
-    Reports: undefined;
+    Dashboard: undefined;
     Settings: undefined;
     CartDetails: { cart: CartData };
     PosMachine: undefined;
