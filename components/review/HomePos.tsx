@@ -1,9 +1,24 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const HomePos = () => {
   const navigation: NavigationProp<RootStackParamList> = useNavigation();
+
+  // Function to handle logout
+  const handleLogout = async () => {
+    try {
+      // Clear tokens from AsyncStorage
+      await AsyncStorage.removeItem("access_token");
+      await AsyncStorage.removeItem("refresh_token");
+      
+      // Navigate to Login screen
+      navigation.navigate("Login");
+    } catch (error) {
+      console.error("Error clearing tokens during logout:", error);
+    }
+  };
 
   const navigateToScreen = (screen: keyof RootStackParamList) => {
     navigation.navigate(screen as any);
@@ -64,12 +79,26 @@ const HomePos = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
+              style={[styles.button, styles.buttonMyApplication]}
+              onPress={() => navigateToScreen("MyLocation")}
+            >
+              <Text style={styles.buttonText}>My Location</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={[styles.button, styles.buttonSettings]}
               onPress={() => navigateToScreen("Settings")}
             >
               <Text style={styles.buttonText}>Settings</Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Logout Button */}
+        <View style={styles.logoutSection}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
@@ -166,6 +195,9 @@ const styles = StyleSheet.create({
   buttonReports: {
     backgroundColor: "#AB47BC",
   },
+  buttonMyApplication: {
+    backgroundColor: "#0adb40",
+  },
   buttonSettings: {
     backgroundColor: "#FF7043",
   },
@@ -173,6 +205,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#fff",
+  },
+  logoutSection: {
+    marginTop: 30,
+    alignItems: "center",
+  },
+  logoutButton: {
+    backgroundColor: "#FF3B30",
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
+  },
+  logoutButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
 

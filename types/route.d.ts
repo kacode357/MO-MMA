@@ -17,4 +17,5 @@ type RootStackParamList = {
     CashScreen: undefined;
     QRCodeScreen: undefined;
     PaymentSuccessScreen: undefined;
+    MyLocation: undefined;
 };

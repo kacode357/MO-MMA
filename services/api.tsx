@@ -22,6 +22,10 @@ export const loginUser = async (username: string, password: string) => {
   const response = await defaultAxiosInstance.post("/v1/api/users/login", { username, password });
   return response.data;
 };
+export const refreshToken = async (tokenData: { access_token: string; refresh_token: string }) => {
+  const response = await defaultAxiosInstance.post("/v1/api/users/refresh-token", tokenData);
+  return response.data;
+};
 export const addOrderItems = async (
   orderData: { items: { food_id: string; quantity: number }[]; created_by: string }
 ) => {

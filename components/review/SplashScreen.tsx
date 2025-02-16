@@ -1,24 +1,61 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, ActivityIndicator } from "react-native";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
+import { refreshToken } from "../../services/api";  
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 const SplashScreen: React.FC = () => {
   const navigation: NavigationProp<RootStackParamList> = useNavigation();
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.navigate("HomePos");
-    }, 3000);
+  const [loading, setLoading] = useState(true);
 
-    return () => clearTimeout(timer);
+  useEffect(() => {
+    const checkTokens = async () => {
+      try {
+        const access_token = await AsyncStorage.getItem("access_token");
+        const refresh_token = await AsyncStorage.getItem("refresh_token");
+
+        // If no tokens, navigate to Login screen
+        if (!access_token || !refresh_token) {
+          setLoading(false);
+          navigation.navigate("Login");
+          return;
+        }
+
+        // Attempt to refresh the tokens
+        const response = await refreshToken({ access_token, refresh_token });
+
+        // Assuming response contains the new access token
+        if (response?.access_token) {
+          // Save the new access token if it exists
+          await AsyncStorage.setItem("access_token", response.access_token);
+          setLoading(false);
+          navigation.navigate("HomePos");
+        } else {
+          setLoading(false);
+          navigation.navigate("Login");
+        }
+      } catch (error) {
+        setLoading(false);
+        console.error("Error refreshing token:", error);
+        navigation.navigate("Login");
+      }
+    };
+
+    checkTokens();
   }, [navigation]);
 
-  return (
-    <View style={styles.container}>
-      <Image source={require("../../assets/logo.png")} style={styles.logo} />
-      <Text style={styles.title}>POS System</Text>
-      <Text style={styles.subtitle}>Simplify your business</Text>
-      <ActivityIndicator size="large" color="#4A628A" style={styles.loader} />
-    </View>
-  );
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Image source={require("../../assets/logo.png")} style={styles.logo} />
+        <Text style={styles.title}>POS System</Text>
+        <Text style={styles.subtitle}>Simplify your business</Text>
+        <ActivityIndicator size="large" color="#4A628A" style={styles.loader} />
+      </View>
+    );
+  }
+
+  return null; // Return nothing while loading
 };
 
 const styles = StyleSheet.create({

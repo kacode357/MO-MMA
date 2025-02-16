@@ -18,6 +18,7 @@ import OrderDetails from "../review/Order/OrderDetaild";
 import CashScreen from "../review/Order/CashScreen";
 import QRCodeScreen from "../review/Order/QRCodeScreen";
 import PaymentSuccessScreen from "../review/Order/PaymentSuccessScreen";
+import MyLocation from "../review/MyLocation";
 
 // Root Stack Navigator
 const AppNavigation = () => {
@@ -25,8 +26,10 @@ const AppNavigation = () => {
 
   return (
     <RootStack.Navigator >
-      <RootStack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }}/>
-      <RootStack.Screen name="Login" component={Login} options={{ headerShown: false }}/>
+        <RootStack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }}/>
+       <RootStack.Screen name="Login" component={Login} options={{ headerShown: false }}/>
+    
+     
       <RootStack.Screen name="HomePos" component={HomePos} options={{ headerShown: false }}/>
     
     
@@ -43,9 +46,9 @@ const AppNavigation = () => {
       <RootStack.Screen name="OrderDetails" component={OrderDetails} />
       <RootStack.Screen name="CashScreen" component={CashScreen} />
       <RootStack.Screen name="QRCodeScreen" component={QRCodeScreen} />
+      <RootStack.Screen name="MyLocation" component={MyLocation} />
       <RootStack.Screen name="PaymentSuccessScreen" component={PaymentSuccessScreen}  options={{ headerShown: false }}/>
-
-
+      
 
     </RootStack.Navigator>
   );

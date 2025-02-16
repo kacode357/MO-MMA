@@ -29,10 +29,10 @@ const Login = () => {
     setLoading(true);
     try {
       const response = await loginUser(username, password);
-      console.log("response", response);
+    
       if (response) {
-        await AsyncStorage.setItem("user_id", response.user_id);
-        Alert.alert("Thành công", response.message);
+        await AsyncStorage.setItem("access_token", response.access_token);
+        await AsyncStorage.setItem("refresh_token", response.refresh_token);
         navigation.navigate("HomePos");
       } else {
         Alert.alert("Lỗi", response.message || "Đăng nhập thất bại");
