@@ -1,6 +1,8 @@
+import ClipdropRemoveBackground from '@/components/ClipdropRemoveBackground';
 import GeminiChatBot from '@/components/GeminiChatBot';
 import GeminiImage from '@/components/GeminiImage';
 import GeminiImageToImage from '@/components/GeminiImageToImage';
+import SignLanguageComponent from '@/components/SignLanguageComponent';
 import TheHiveImage from '@/components/TheHiveImage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -26,6 +28,12 @@ export default function AllModelScreen() {
   }
   if (ai_model === 'gemini' && first_supported_feature === 'image_to_image') {
     return <GeminiImageToImage package_id={packageIdString} first_supported_feature={featureString} ai_model={aiModelString} />;
+  }
+  if (ai_model === 'clipdrop' && first_supported_feature === 'remove_background') {
+    return <ClipdropRemoveBackground package_id={packageIdString} first_supported_feature={featureString} ai_model={aiModelString} />;
+  }
+  if (ai_model === 'signlanguage' && first_supported_feature === 'signlanguage') {
+    return <SignLanguageComponent />;
   }
 
   return (

@@ -1,65 +1,27 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { Colors } from '@/constants/Colors';
-import { useTheme } from '@/context/ThemeContext';
+import { router } from 'expo-router';
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
 export default function Settings() {
-  const { theme, setTheme } = useTheme();
-
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title" style={styles.title}>Cài đặt</ThemedText>
-      <ThemedText style={styles.label}>Chủ đề hiện tại: {theme === 'light' ? 'Sáng' : theme === 'dark' ? 'Tối' : theme === 'red' ? 'Đỏ' : theme === 'green' ? 'Xanh lá' : theme === 'blue' ? 'Xanh dương' : 'Tùy chỉnh'}</ThemedText>
-      <ThemedView style={styles.buttonContainer}>
+      <ThemedView style={styles.listContainer}>
         <TouchableOpacity
-          style={[styles.themeButton, { backgroundColor: Colors.light.background, opacity: theme === 'light' ? 0.6 : 1 }]}
-          onPress={() => setTheme('light')}
-          disabled={theme === 'light'}
+          style={styles.listItem}
+          onPress={() => router.push('/theme')}
           activeOpacity={0.8}
         >
-          <ThemedText style={[styles.buttonText, { color: Colors.light.text }]}>Chủ đề Sáng</ThemedText>
+          <ThemedText style={styles.listItemText}>Cài đặt Chủ đề</ThemedText>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.themeButton, { backgroundColor: Colors.dark.background, opacity: theme === 'dark' ? 0.6 : 1 }]}
-          onPress={() => setTheme('dark')}
-          disabled={theme === 'dark'}
+          style={styles.listItem}
+          onPress={() => router.push('/camera')}
           activeOpacity={0.8}
         >
-          <ThemedText style={[styles.buttonText, { color: Colors.dark.text }]}>Chủ đề Tối</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.themeButton, { backgroundColor: Colors.red.background, opacity: theme === 'red' ? 0.6 : 1 }]}
-          onPress={() => setTheme('red')}
-          disabled={theme === 'red'}
-          activeOpacity={0.8}
-        >
-          <ThemedText style={[styles.buttonText, { color: Colors.red.text }]}>Chủ đề Đỏ</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.themeButton, { backgroundColor: Colors.green.background, opacity: theme === 'green' ? 0.6 : 1 }]}
-          onPress={() => setTheme('green')}
-          disabled={theme === 'green'}
-          activeOpacity={0.8}
-        >
-          <ThemedText style={[styles.buttonText, { color: Colors.green.text }]}>Chủ đề Xanh lá</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.themeButton, { backgroundColor: Colors.blue.background, opacity: theme === 'blue' ? 0.6 : 1 }]}
-          onPress={() => setTheme('blue')}
-          disabled={theme === 'blue'}
-          activeOpacity={0.8}
-        >
-          <ThemedText style={[styles.buttonText, { color: Colors.blue.text }]}>Chủ đề Xanh dương</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.themeButton, { backgroundColor: Colors.custom.background, opacity: theme === 'custom' ? 0.6 : 1 }]}
-          onPress={() => setTheme('custom')}
-          disabled={theme === 'custom'}
-          activeOpacity={0.8}
-        >
-          <ThemedText style={[styles.buttonText, { color: Colors.custom.text }]}>Chủ đề Tùy chỉnh</ThemedText>
+          <ThemedText style={styles.listItemText}>Cài đặt Camera</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     </ThemedView>
@@ -78,19 +40,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
   },
-  label: {
-    fontSize: 18,
-    marginBottom: 20,
-  },
-  buttonContainer: {
-    gap: 12,
+  listContainer: {
     width: '100%',
     maxWidth: 300,
+    gap: 12,
   },
-  themeButton: {
+  listItem: {
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -98,7 +57,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  buttonText: {
+  listItemText: {
     fontSize: 16,
     fontWeight: '600',
   },
