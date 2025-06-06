@@ -64,35 +64,47 @@ export default function HomeScreen() {
   }, []);
 
   // Kiểm tra quyền truy cập gói
-  const handleCheckAccess = async (packageId: string, packageName: string, description: string, price: number) => {
-    console.log('handleCheckAccess - description:', description);
-    setCheckingAccess(packageId);
-    try {
-      const userId = await AsyncStorage.getItem('user_id');
-      if (!userId) throw new Error('Không tìm thấy user_id. Vui lòng đăng nhập lại.');
+  // Kiểm tra quyền truy cập gói
+const handleCheckAccess = async (packageId: string, packageName: string, description: string, price: number) => {
+  console.log('handleCheckAccess - description:', description);
+  setCheckingAccess(packageId);
+  try {
+    const userId = await AsyncStorage.getItem('user_id');
+    if (!userId) throw new Error('Không tìm thấy user_id. Vui lòng đăng nhập lại.');
 
-      const response = await checkAccessPackage(userId, packageId);
-      if (response.status === 200 && response.data.has_access) {
-        const name = packageName.toLowerCase();
-        if (name.includes('hive model')) router.push('/model-ai/hive-model');
-        else if (name.includes('gemini') && name.includes('chatbot')) router.push('/model-ai/gemini-model-chatbot');
-      } else {
-        throw new Error('Bạn không có quyền truy cập gói này. Vui lòng mua để tiếp tục.');
-      }
-    } catch (err: any) {
-      setModal({
-        visible: true,
-        message: err.response?.data?.message || err.message,
-        package_id: packageId,
-        package_name: packageName,
-        package_description: description || 'Không có mô tả',
-        package_price: price,
-        user_id: await AsyncStorage.getItem('user_id') || '',
+    const response = await checkAccessPackage(userId, packageId);
+    console.log('handleCheckAccess - response:', response);
+    if (response.status === 200 && response.data.has_access) {
+      // Extract first element of supported_features and ai_model
+      const firstSupportedFeature = response.data.package.supported_features[0] || null;
+      const aiModel = response.data.package.ai_model || null;
+
+      // Push firstSupportedFeature, aiModel, and packageId as params
+      router.push({
+        pathname: '/model-ai/all-model',
+        params: {
+          first_supported_feature: firstSupportedFeature,
+          ai_model: aiModel,
+          package_id: packageId, // Add package_id to params
+        },
       });
-    } finally {
-      setCheckingAccess(null);
+    } else {
+      throw new Error('Bạn không có quyền truy cập gói này. Vui lòng mua để tiếp tục.');
     }
-  };
+  } catch (err: any) {
+    setModal({
+      visible: true,
+      message: err.response?.data?.message || err.message,
+      package_id: packageId,
+      package_name: packageName,
+      package_description: description || 'Không có mô tả',
+      package_price: price,
+      user_id: await AsyncStorage.getItem('user_id') || '',
+    });
+  } finally {
+    setCheckingAccess(null);
+  }
+};
 
   // Đóng modal
   const closeModal = () => setModal({ visible: false, message: '', package_id: '', package_name: '', package_description: '', package_price: 0, user_id: '' });

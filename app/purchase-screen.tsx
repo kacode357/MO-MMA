@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   headerTitle: { marginBottom: 20 },
   headerImage: {
     width: '100%',
-    height: 200,
+    height: 100,
     borderBottomLeftRadius: 4,
     borderBottomRightRadius: 4,
   },
